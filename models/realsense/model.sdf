@@ -7,13 +7,13 @@
       <gravity>0</gravity>
       <visual name="visual">
         <geometry>
-          <box>
-            <size>0.01 0.2 0.03</size>
-          </box>
+          <mesh>
+            <uri>model://realsense/meshes/realsense.dae</uri>
+          </mesh>
         </geometry>
       </visual>
       <sensor name="ired1" type="camera">
-        <pose frame="">0 0.08 0 0 0 0</pose>
+        <pose frame="">0 0.047 0.004 0 0 0</pose>
         <camera name="__default__">
           <horizontal_fov>1.047</horizontal_fov>
           <image>
@@ -30,7 +30,7 @@
         <visualize>1</visualize>
       </sensor>
       <sensor name="ired2" type="camera">
-        <pose frame="">0 -0.08 0 0 0 0</pose>
+        <pose frame="">0 -0.047 0.004 0 0 0</pose>
         <camera name="__default__">
           <horizontal_fov>1.047</horizontal_fov>
           <image>

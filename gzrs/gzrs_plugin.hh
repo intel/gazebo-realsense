@@ -34,6 +34,7 @@ class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
 
   public:
     RealSensePlugin();
+    ~RealSensePlugin();
     virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
     virtual void OnNewDepthFrame(const float *_image, unsigned int _width,
                                  unsigned int _height, unsigned int _depth,
@@ -53,12 +54,15 @@ class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
 
     transport::NodePtr node;
     transport::PublisherPtr depth_pub;
+    transport::PublisherPtr depth_view_pub;
     transport::PublisherPtr color_pub;
     transport::PublisherPtr ired1_pub;
     transport::PublisherPtr ired2_pub;
     
     event::ConnectionPtr new_depth_frame_conn;
     event::ConnectionPtr update_connection;
+
+    uint16_t *depth_map = NULL;
 
     void OnUpdate();
 };

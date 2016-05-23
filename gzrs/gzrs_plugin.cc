@@ -34,6 +34,11 @@ RealSensePlugin::RealSensePlugin()
     this->ired2_cam = NULL;
 }
 
+RealSensePlugin::~RealSensePlugin()
+{
+    delete [] depth_map;
+}
+
 void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
     // Output the name of the model
@@ -43,7 +48,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     // Store a pointer to the this model
     this->rs_model = _model;
 
-    // Store a pointer to the world 
+    // Store a pointer to the world
     this->world = this->rs_model->GetWorld();
 
     // Sensors Manager
@@ -63,26 +68,36 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 
     // TODO: Check Infrared Camera Renderers
 
+    // Allocate Memory for the real sense depth map
+    this->depth_map =
+        new uint16_t[depth_cam->ImageWidth() * depth_cam->ImageHeight()];
+
     // Setup Publishers
     this->node = transport::NodePtr(new transport::Node());
     this->node->Init(this->world->GetName());
+
+    this->depth_view_pub = this->node->Advertise<msgs::ImageStamped>(
+        "~/" + this->rs_model->GetName() + "/rs_stream_depth_view", 1,
+        DEPTH_PUB_FREQ_HZ);
+
     this->depth_pub = this->node->Advertise<msgs::ImageStamped>(
-        "~/" + this->rs_model->GetName() + "/rs_stream_depth", DEPTH_PUB_FREQ_HZ);
+        "~/" + this->rs_model->GetName() + "/rs_stream_depth", 1,
+        DEPTH_PUB_FREQ_HZ);
 
     // TODO: Infrared Camera and Color Camera Publishers
 
     // Listen to depth camera new frame event
-    this->new_depth_frame_conn = this->depth_cam->ConnectNewDepthFrame(std::bind(
-        &RealSensePlugin::OnNewDepthFrame, this, std::placeholders::_1,
-        std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
-        std::placeholders::_5));
+    this->new_depth_frame_conn =
+        this->depth_cam->ConnectNewDepthFrame(std::bind(
+            &RealSensePlugin::OnNewDepthFrame, this, std::placeholders::_1,
+            std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
+            std::placeholders::_5));
 
     // TODO: Infrared Camera Listeners
 
     // Listen to the update event
     this->update_connection = event::Events::ConnectWorldUpdateBegin(
         boost::bind(&RealSensePlugin::OnUpdate, this));
-
 }
 
 void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
@@ -92,6 +107,7 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
 {
     msgs::ImageStamped msg;
 
+    // Pack viewable image message
     msgs::Set(msg.mutable_time(), this->world->GetSimTime());
     msg.mutable_image()->set_width(this->depth_cam->ImageWidth());
     msg.mutable_image()->set_height(this->depth_cam->ImageHeight());
@@ -101,10 +117,41 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
     msg.mutable_image()->set_data(this->depth_cam->DepthData(),
                                   sizeof(float) * msg.image().width() *
                                       msg.image().height());
-    
+
+    // Publish viewable image
+    this->depth_view_pub->Publish(msg);
+
+    // Convert depth data to realsense scaled depth map
+    unsigned int depth_map_dim =
+        this->depth_cam->ImageWidth() * this->depth_cam->ImageHeight();
+
+    for (unsigned int i = 0; i < depth_map_dim; i++) {
+        // Convert from meters to 0 - UINT16_MAX
+        if (_image[i] <= this->depth_cam->NearClip() ||
+            _image[i] >= this->depth_cam->FarClip()) {
+            depth_map[i] = 0;
+        } else {
+            depth_map[i] =
+                (_image[i] - this->depth_cam->NearClip()) * UINT16_MAX /
+                (this->depth_cam->FarClip() - this->depth_cam->NearClip());
+        }
+    }
+
+    // Pack realsense scaled depth map 
+    msgs::Set(msg.mutable_time(), this->world->GetSimTime());
+    msg.mutable_image()->set_width(this->depth_cam->ImageWidth());
+    msg.mutable_image()->set_height(this->depth_cam->ImageHeight());
+    msg.mutable_image()->set_pixel_format(common::Image::L_INT16);
+    msg.mutable_image()->set_step(this->depth_cam->ImageWidth() *
+                                  this->depth_cam->ImageDepth());
+    msg.mutable_image()->set_data(this->depth_map, sizeof(uint16_t) *
+                                                       msg.image().width() *
+                                                       msg.image().height());
+
+    // Publish realsense scaled depth map
     this->depth_pub->Publish(msg);
 
-    // TODO: Publish Color Camera 
+    // TODO: Publish Color Camera
 }
 
 void RealSensePlugin::OnUpdate()
