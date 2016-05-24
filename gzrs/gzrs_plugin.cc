@@ -107,6 +107,8 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
 {
     msgs::ImageStamped msg;
 
+    const float * depth_data_float = this->depth_cam->DepthData();
+
     // Pack viewable image message
     msgs::Set(msg.mutable_time(), this->world->GetSimTime());
     msg.mutable_image()->set_width(this->depth_cam->ImageWidth());
@@ -114,9 +116,9 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
     msg.mutable_image()->set_pixel_format(common::Image::R_FLOAT32);
     msg.mutable_image()->set_step(this->depth_cam->ImageWidth() *
                                   this->depth_cam->ImageDepth());
-    msg.mutable_image()->set_data(this->depth_cam->DepthData(),
-                                  sizeof(float) * msg.image().width() *
-                                      msg.image().height());
+    msg.mutable_image()->set_data(depth_data_float, sizeof(*depth_data_float) *
+                                                        msg.image().width() *
+                                                        msg.image().height());
 
     // Publish viewable image
     this->depth_view_pub->Publish(msg);
@@ -127,12 +129,12 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
 
     for (unsigned int i = 0; i < depth_map_dim; i++) {
         // Convert from meters to 0 - UINT16_MAX
-        if (_image[i] <= this->depth_cam->NearClip() ||
-            _image[i] >= this->depth_cam->FarClip()) {
+        if (depth_data_float[i] <= this->depth_cam->NearClip() ||
+            depth_data_float[i] >= this->depth_cam->FarClip()) {
             depth_map[i] = 0;
         } else {
             depth_map[i] =
-                (_image[i] - this->depth_cam->NearClip()) * UINT16_MAX /
+                (depth_data_float[i] - this->depth_cam->NearClip()) * UINT16_MAX /
                 (this->depth_cam->FarClip() - this->depth_cam->NearClip());
         }
     }
