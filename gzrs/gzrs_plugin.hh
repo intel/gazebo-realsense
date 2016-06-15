@@ -39,6 +39,18 @@ class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
     virtual void OnNewDepthFrame(const float *_image, unsigned int _width,
                                  unsigned int _height, unsigned int _depth,
                                  const std::string &_format);
+    virtual void OnNewIR1Frame(const unsigned char *_image, unsigned int _width,
+                               unsigned int _height, unsigned int /*_depth*/,
+                               const std::string &
+                               /*_format*/);
+    virtual void OnNewIR2Frame(const unsigned char *_image, unsigned int _width,
+                               unsigned int _height, unsigned int /*_depth*/,
+                               const std::string &
+                               /*_format*/);
+    virtual void OnNewColorFrame(const unsigned char *_image,
+                                 unsigned int _width, unsigned int _height,
+                                 unsigned int /*_depth*/, const std::string &
+                                 /*_format*/);
 
   private:
 
@@ -47,6 +59,7 @@ class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
 
     // Renderers
     rendering::DepthCameraPtr depth_cam;
+    rendering::CameraPtr color_cam;
     rendering::CameraPtr ired1_cam;
     rendering::CameraPtr ired2_cam;
 
@@ -60,6 +73,9 @@ class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
     transport::PublisherPtr ired2_pub;
     
     event::ConnectionPtr new_depth_frame_conn;
+    event::ConnectionPtr new_ired1_frame_conn;
+    event::ConnectionPtr new_ired2_frame_conn;
+    event::ConnectionPtr new_color_frame_conn;
     event::ConnectionPtr update_connection;
 
     uint16_t *depth_map = NULL;
