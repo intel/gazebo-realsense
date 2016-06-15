@@ -95,6 +95,11 @@
             <near>0.1</near>
             <far>100</far>
           </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
         </camera>
         <always_on>1</always_on>
         <update_rate>60</update_rate>
@@ -113,10 +118,15 @@
             <near>0.1</near>
             <far>100</far>
           </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
         </camera>
         <always_on>1</always_on>
         <update_rate>60</update_rate>
-        <visualize>1</visualize>
+        <visualize>0</visualize>
       </sensor>
       <sensor name="ired2" type="camera">
         <pose frame="">0 0.01 0.004 0 0 0</pose>
@@ -131,10 +141,15 @@
             <near>0.1</near>
             <far>100</far>
           </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
         </camera>
         <always_on>1</always_on>
         <update_rate>60</update_rate>
-        <visualize>1</visualize>
+        <visualize>0</visualize>
       </sensor>
       <sensor name="depth" type="depth">
         <pose frame="">0 -0.03 0.004 0 0 0</pose>
@@ -148,10 +163,15 @@
             <near>0.1</near>
             <far>100</far>
           </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
         </camera>
         <always_on>1</always_on>
         <update_rate>60</update_rate>
-        <visualize>1</visualize>
+        <visualize>0</visualize>
       </sensor>
     </link>
   </model>
