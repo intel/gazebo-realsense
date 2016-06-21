@@ -39,8 +39,11 @@
 #define DEPTH_SCALE_M 0.001
 
 using namespace gazebo;
+
+// Register the plugin
 GZ_REGISTER_MODEL_PLUGIN(RealSensePlugin)
 
+/////////////////////////////////////////////////
 RealSensePlugin::RealSensePlugin()
 {
   this->depthCam = NULL;
@@ -49,10 +52,13 @@ RealSensePlugin::RealSensePlugin()
   this->colorCam = NULL;
 }
 
+/////////////////////////////////////////////////
 RealSensePlugin::~RealSensePlugin()
 {
   delete[] depthMap;
 }
+
+/////////////////////////////////////////////////
 void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
   // Output the name of the model
@@ -126,8 +132,6 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
       "~/" + this->rsModel->GetName() + "/rs/stream/" + COLOR_CAMERA_TOPIC, 1,
       DEPTH_PUB_FREQ_HZ);
 
-  // TODO: Publish Depth Scale
-
   // Listen to depth camera new frame event
   this->newDepthFrameConn = this->depthCam->ConnectNewDepthFrame(
       std::bind(&RealSensePlugin::OnNewDepthFrame, this, std::placeholders::_1,
@@ -154,6 +158,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
       boost::bind(&RealSensePlugin::OnUpdate, this));
 }
 
+/////////////////////////////////////////////////
 void RealSensePlugin::OnNewIR1Frame(const unsigned char *_image,
                                     unsigned int _width, unsigned int _height,
                                     unsigned int /*_depth*/,
@@ -184,6 +189,7 @@ void RealSensePlugin::OnNewIR1Frame(const unsigned char *_image,
   this->ired1Pub->Publish(msg);
 }
 
+/////////////////////////////////////////////////
 void RealSensePlugin::OnNewIR2Frame(const unsigned char *_image,
                                     unsigned int _width, unsigned int _height,
                                     unsigned int /*_depth*/,
@@ -214,6 +220,7 @@ void RealSensePlugin::OnNewIR2Frame(const unsigned char *_image,
   this->ired2Pub->Publish(msg);
 }
 
+/////////////////////////////////////////////////
 void RealSensePlugin::OnNewColorFrame(const unsigned char *_image,
                                       unsigned int _width, unsigned int _height,
                                       unsigned int /*_depth*/,
@@ -244,6 +251,7 @@ void RealSensePlugin::OnNewColorFrame(const unsigned char *_image,
   this->colorPub->Publish(msg);
 }
 
+/////////////////////////////////////////////////
 void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
                                       unsigned int _height,
                                       unsigned int /*_depth*/,
@@ -311,6 +319,7 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
   this->depthPub->Publish(msg);
 }
 
+/////////////////////////////////////////////////
 void RealSensePlugin::OnUpdate()
 {
   return;
