@@ -53,33 +53,21 @@ namespace gazebo
     /// \brief Callback that publishes a received Depth Frame as an ImageStamped
     /// message.
     public:
-    virtual void OnNewDepthFrame(const float *_image, unsigned int _width,
-                                 unsigned int _height, unsigned int _depth,
-                                 const std::string &_format);
+    virtual void OnNewDepthFrame() const;
 
     /// \brief Callback that publishes a received Infrared Frame as an
     /// ImageStamped message.
     public:
-    virtual void OnNewIR1Frame(const unsigned char *_image, unsigned int _width,
-                               unsigned int _height, unsigned int /*_depth*/,
-                               const std::string &
-                               /*_format*/) const;
-
+    virtual void OnNewIR1Frame() const; 
     /// \brief Callback that publishes a received Infrared2 Frame as an
     /// ImageStamped message.
     public:
-    virtual void OnNewIR2Frame(const unsigned char *_image, unsigned int _width,
-                               unsigned int _height, unsigned int /*_depth*/,
-                               const std::string &
-                               /*_format*/) const;
+    virtual void OnNewIR2Frame() const;
 
     /// \brief Callback that publishes a received Color Frame as an ImageStamped
     /// message.
     public:
-    virtual void OnNewColorFrame(const unsigned char *_image,
-                                 unsigned int _width, unsigned int _height,
-                                 unsigned int /*_depth*/, const std::string &
-                                 /*_format*/) const;
+    virtual void OnNewColorFrame() const;
 
     /// \brief Private data pointer.
     private: std::unique_ptr<RealSensePluginPrivate> dataPtr;

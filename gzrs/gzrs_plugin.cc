@@ -118,15 +118,12 @@ namespace gazebo
     /// \brief Pointer to the World Update event connection.
     public:
     event::ConnectionPtr updateConnection;
-
-    /// \brief Array with converted Depth Map data.
-    public:
-    uint16_t *depthMap = nullptr;
   };
 }
 
 /////////////////////////////////////////////////
-RealSensePlugin::RealSensePlugin() : dataPtr(new RealSensePluginPrivate)
+RealSensePlugin::RealSensePlugin()
+    : dataPtr(new RealSensePluginPrivate)
 {
   this->dataPtr->depthCam = nullptr;
   this->dataPtr->ired1Cam = nullptr;
@@ -137,8 +134,7 @@ RealSensePlugin::RealSensePlugin() : dataPtr(new RealSensePluginPrivate)
 /////////////////////////////////////////////////
 RealSensePlugin::~RealSensePlugin()
 {
-  delete[] this->dataPtr->depthMap;
-  this->dataPtr->depthMap = nullptr;
+  return;
 }
 
 /////////////////////////////////////////////////
@@ -217,24 +213,16 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 
   // Listen to depth camera new frame event
   this->dataPtr->newDepthFrameConn = this->dataPtr->depthCam->ConnectNewDepthFrame(
-      std::bind(&RealSensePlugin::OnNewDepthFrame, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3,
-                std::placeholders::_4, std::placeholders::_5));
+      std::bind(&RealSensePlugin::OnNewDepthFrame, this));
 
   this->dataPtr->newIred1FrameConn = this->dataPtr->ired1Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewIR1Frame, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3,
-                std::placeholders::_4, std::placeholders::_5));
+      std::bind(&RealSensePlugin::OnNewIR1Frame, this));
 
   this->dataPtr->newIred2FrameConn = this->dataPtr->ired2Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewIR2Frame, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3,
-                std::placeholders::_4, std::placeholders::_5));
+      std::bind(&RealSensePlugin::OnNewIR2Frame, this));
 
   this->dataPtr->newColorFrameConn = this->dataPtr->ired1Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewColorFrame, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3,
-                std::placeholders::_4, std::placeholders::_5));
+      std::bind(&RealSensePlugin::OnNewColorFrame, this));
 
   // Listen to the update event
   this->dataPtr->updateConnection = event::Events::ConnectWorldUpdateBegin(
@@ -242,10 +230,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::OnNewIR1Frame(const unsigned char *_image,
-                                    unsigned int _width, unsigned int _height,
-                                    unsigned int /*_depth*/,
-                                    const std::string & /*_format*/) const
+void RealSensePlugin::OnNewIR1Frame() const
 {
   msgs::ImageStamped msg;
 
@@ -273,10 +258,7 @@ void RealSensePlugin::OnNewIR1Frame(const unsigned char *_image,
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::OnNewIR2Frame(const unsigned char *_image,
-                                    unsigned int _width, unsigned int _height,
-                                    unsigned int /*_depth*/,
-                                    const std::string & /*_format*/) const
+void RealSensePlugin::OnNewIR2Frame() const
 {
   msgs::ImageStamped msg;
 
@@ -304,10 +286,7 @@ void RealSensePlugin::OnNewIR2Frame(const unsigned char *_image,
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::OnNewColorFrame(const unsigned char *_image,
-                                      unsigned int _width, unsigned int _height,
-                                      unsigned int /*_depth*/,
-                                      const std::string & /*_format*/) const
+void RealSensePlugin::OnNewColorFrame() const
 {
   msgs::ImageStamped msg;
 
@@ -335,23 +314,29 @@ void RealSensePlugin::OnNewColorFrame(const unsigned char *_image,
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
-                                      unsigned int _height,
-                                      unsigned int /*_depth*/,
-                                      const std::string & /*_format*/)
+void RealSensePlugin::OnNewDepthFrame() const
 {
+  // Get Depth Map dimensions
+  unsigned int imageSize = this->dataPtr->depthCam->ImageWidth() *
+                           this->dataPtr->depthCam->ImageHeight();
+
   // Allocate Memory for the real sense depth map
-  // TODO: Allocate this memory more intelligently. Also make sure you free it
-  // :)
-  if (!this->dataPtr->depthMap)
+  static std::vector<uint16_t> depthMap;
+  if (depthMap.size() != imageSize)
   {
-    this->dataPtr->depthMap = new uint16_t[this->dataPtr->depthCam->ImageWidth() *
-                                  this->dataPtr->depthCam->ImageHeight()];
+    try
+    {
+      depthMap.resize(imageSize);
+    }
+    catch (const std::bad_alloc &e)
+    {
+      std::cerr << "Allocation failed: " << e.what() << std::endl;
+      return;
+    }
   }
 
+  // Instantiate message
   msgs::ImageStamped msg;
-
-  const float *depth_data_float = this->dataPtr->depthCam->DepthData();
 
   // Pack viewable image message
   msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
@@ -360,30 +345,26 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
   msg.mutable_image()->set_pixel_format(common::Image::R_FLOAT32);
   msg.mutable_image()->set_step(this->dataPtr->depthCam->ImageWidth() *
                                 this->dataPtr->depthCam->ImageDepth());
-  msg.mutable_image()->set_data(
-      depth_data_float,
-      sizeof(*depth_data_float) * msg.image().width() * msg.image().height());
+  const float *depthDataFloat = this->dataPtr->depthCam->DepthData();
+  msg.mutable_image()->set_data(depthDataFloat,
+                                sizeof(*depthDataFloat) * imageSize);
 
   // Publish viewable image
   this->dataPtr->depthViewPub->Publish(msg);
 
-  // Convert depth data to realsense scaled depth map
-  unsigned int depthMap_dim =
-      this->dataPtr->depthCam->ImageWidth() * this->dataPtr->depthCam->ImageHeight();
-
-  for (unsigned int i = 0; i < depthMap_dim; ++i)
+  // Convert Float depth data to RealSense depth data
+  for (unsigned int i = 0; i < imageSize; ++i)
   {
     // Check clipping and overflow
-    if (depth_data_float[i] < DEPTH_NEAR_CLIP_M ||
-        depth_data_float[i] > DEPTH_FAR_CLIP_M ||
-        depth_data_float[i] > DEPTH_SCALE_M * UINT16_MAX ||
-        depth_data_float[i] < 0)
+    if (depthDataFloat[i] < DEPTH_NEAR_CLIP_M ||
+        depthDataFloat[i] > DEPTH_FAR_CLIP_M ||
+        depthDataFloat[i] > DEPTH_SCALE_M * UINT16_MAX || depthDataFloat[i] < 0)
     {
-      this->dataPtr->depthMap[i] = 0;
+      depthMap[i] = 0;
     }
     else
     {
-      this->dataPtr->depthMap[i] = (uint16_t)(depth_data_float[i] / DEPTH_SCALE_M);
+      depthMap[i] = (uint16_t)(depthDataFloat[i] / DEPTH_SCALE_M);
     }
   }
 
@@ -394,9 +375,8 @@ void RealSensePlugin::OnNewDepthFrame(const float *_image, unsigned int _width,
   msg.mutable_image()->set_pixel_format(common::Image::L_INT16);
   msg.mutable_image()->set_step(this->dataPtr->depthCam->ImageWidth() *
                                 this->dataPtr->depthCam->ImageDepth());
-  msg.mutable_image()->set_data(
-      this->dataPtr->depthMap,
-      sizeof(*this->dataPtr->depthMap) * msg.image().width() * msg.image().height());
+  msg.mutable_image()->set_data(depthMap.data(),
+                                sizeof(*depthMap.data()) * imageSize);
 
   // Publish realsense scaled depth map
   this->dataPtr->depthPub->Publish(msg);
