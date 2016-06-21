@@ -28,6 +28,8 @@
 
 namespace gazebo
 {
+  // Forward declare private data class
+  struct RealSensePluginPrivate;
 
   /// \brief A plugin that simulates Real Sense camera streams.
   class GAZEBO_VISIBLE RealSensePlugin : public ModelPlugin
@@ -43,6 +45,10 @@ namespace gazebo
     // Documentation Inherited.
     public:
     virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+
+    /// \brief Callback for the World Update event.
+    public:
+    void OnUpdate();
 
     /// \brief Callback that publishes a received Depth Frame as an ImageStamped
     /// message.
@@ -75,85 +81,8 @@ namespace gazebo
                                  unsigned int /*_depth*/, const std::string &
                                  /*_format*/) const;
 
-    /// \brief Pointer to the model containing the plugin.
-    protected:
-    physics::ModelPtr rsModel;
-
-    /// \brief Pointer to the world.
-    protected:
-    physics::WorldPtr world;
-
-    /// \brief Pointer to the Depth Camera Renderer.
-    protected:
-    rendering::DepthCameraPtr depthCam;
-
-    /// \brief Pointer to the Color Camera Renderer.
-    protected:
-    rendering::CameraPtr colorCam;
-
-    /// \brief Pointer to the Infrared Camera Renderer.
-    protected:
-    rendering::CameraPtr ired1Cam;
-
-    /// \brief Pointer to the Infrared2 Camera Renderer.
-    protected:
-    rendering::CameraPtr ired2Cam;
-
-    /// \brief Pointer to the world's Sensor Manager.
-    protected:
-    sensors::SensorManager *smanager;
-
-    /// \brief Pointer to the transport Node.
-    protected:
-    transport::NodePtr node;
-
-    /// \brief Pointer to the Depth Publisher.
-    protected:
-    transport::PublisherPtr depthPub;
-
-    /// \brief Pointer to the DepthView Publisher.
-    protected:
-    transport::PublisherPtr depthViewPub;
-
-    /// \brief Pointer to the Color Publisher.
-    protected:
-    transport::PublisherPtr colorPub;
-
-    /// \brief Pointer to the Infrared Publisher.
-    protected:
-    transport::PublisherPtr ired1Pub;
-
-    /// \brief Pointer to the Infrared2 Publisher.
-    protected:
-    transport::PublisherPtr ired2Pub;
-
-    /// \brief Pointer to the Depth Camera callback connection.
-    protected:
-    event::ConnectionPtr newDepthFrameConn;
-
-    /// \brief Pointer to the Depth Camera callback connection.
-    protected:
-    event::ConnectionPtr newIred1FrameConn;
-
-    /// \brief Pointer to the Infrared Camera callback connection.
-    protected:
-    event::ConnectionPtr newIred2FrameConn;
-
-    /// \brief Pointer to the Color Camera callback connection.
-    protected:
-    event::ConnectionPtr newColorFrameConn;
-
-    /// \brief Pointer to the World Update event connection.
-    protected:
-    event::ConnectionPtr updateConnection;
-
-    /// \brief Array with converted Depth Map data.
-    protected:
-    uint16_t *depthMap = NULL;
-
-    /// \brief Callback for the World Update event.
-    protected:
-    void OnUpdate();
+    /// \brief Private data pointer.
+    private: std::unique_ptr<RealSensePluginPrivate> dataPtr;
   };
 }
 #endif
