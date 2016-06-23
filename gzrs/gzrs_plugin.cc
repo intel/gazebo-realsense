@@ -71,13 +71,9 @@ namespace gazebo
     public:
     rendering::CameraPtr ired2Cam;
 
-    /// \brief Pointer to the world's Sensor Manager.
-    public:
-    sensors::SensorManager *smanager;
-
     /// \brief Pointer to the transport Node.
     public:
-    transport::NodePtr node;
+    transport::NodePtr transportNode;
 
     /// \brief Pointer to the Depth Publisher.
     public:
@@ -134,15 +130,15 @@ RealSensePlugin::RealSensePlugin()
 /////////////////////////////////////////////////
 RealSensePlugin::~RealSensePlugin()
 {
-  return;
 }
 
 /////////////////////////////////////////////////
 void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
   // Output the name of the model
-  std::cout << "\nThe rs_camera plugin is attach to model \""
-            << _model->GetName() << "\"\n";
+  std::cout << std::endl
+            << "The rs_camera plugin is attach to model " << _model->GetName()
+            << std::endl;
 
   // Store a pointer to the this model
   this->dataPtr->rsModel = _model;
@@ -151,21 +147,22 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->dataPtr->world = this->dataPtr->rsModel->GetWorld();
 
   // Sensors Manager
-  this->dataPtr->smanager = sensors::SensorManager::Instance();
+  sensors::SensorManager *smanager = sensors::SensorManager::Instance();
 
   // Get Cameras Renderers
-  this->dataPtr->depthCam = std::dynamic_pointer_cast<sensors::DepthCameraSensor>(
-                       this->dataPtr->smanager->GetSensor(DEPTH_CAMERA_NAME))
-                       ->DepthCamera();
+  this->dataPtr->depthCam =
+      std::dynamic_pointer_cast<sensors::DepthCameraSensor>(
+          smanager->GetSensor(DEPTH_CAMERA_NAME))
+          ->DepthCamera();
   this->dataPtr->ired1Cam = std::dynamic_pointer_cast<sensors::CameraSensor>(
-                       this->dataPtr->smanager->GetSensor(IRED1_CAMERA_NAME))
-                       ->Camera();
+                                smanager->GetSensor(IRED1_CAMERA_NAME))
+                                ->Camera();
   this->dataPtr->ired2Cam = std::dynamic_pointer_cast<sensors::CameraSensor>(
-                       this->dataPtr->smanager->GetSensor(IRED2_CAMERA_NAME))
-                       ->Camera();
+                                smanager->GetSensor(IRED2_CAMERA_NAME))
+                                ->Camera();
   this->dataPtr->colorCam = std::dynamic_pointer_cast<sensors::CameraSensor>(
-                       this->dataPtr->smanager->GetSensor(COLOR_CAMERA_NAME))
-                       ->Camera();
+                                smanager->GetSensor(COLOR_CAMERA_NAME))
+                                ->Camera();
 
   // Check if camera renderers have been found successfuly
   if (!this->dataPtr->depthCam)
@@ -190,26 +187,28 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   }
 
   // Setup Transport Node
-  this->dataPtr->node = transport::NodePtr(new transport::Node());
-  this->dataPtr->node->Init(this->dataPtr->world->GetName());
+  this->dataPtr->transportNode = transport::NodePtr(new transport::Node());
+  this->dataPtr->transportNode->Init(this->dataPtr->world->GetName());
 
   // Setup Publishers
-  this->dataPtr->depthViewPub = this->dataPtr->node->Advertise<msgs::ImageStamped>(
-      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/" + DEPTH_CAMERA_TOPIC +
-          "_view",
-      1, DEPTH_PUB_FREQ_HZ);
-  this->dataPtr->depthPub = this->dataPtr->node->Advertise<msgs::ImageStamped>(
-      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/" + DEPTH_CAMERA_TOPIC, 1,
-      DEPTH_PUB_FREQ_HZ);
-  this->dataPtr->ired1Pub = this->dataPtr->node->Advertise<msgs::ImageStamped>(
-      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/" + IRED1_CAMERA_TOPIC, 1,
-      DEPTH_PUB_FREQ_HZ);
-  this->dataPtr->ired2Pub = this->dataPtr->node->Advertise<msgs::ImageStamped>(
-      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/" + IRED2_CAMERA_TOPIC, 1,
-      DEPTH_PUB_FREQ_HZ);
-  this->dataPtr->colorPub = this->dataPtr->node->Advertise<msgs::ImageStamped>(
-      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/" + COLOR_CAMERA_TOPIC, 1,
-      DEPTH_PUB_FREQ_HZ);
+  std::string rsTopicRoot =
+      "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/";
+  
+  this->dataPtr->depthViewPub =
+      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
+          rsTopicRoot + DEPTH_CAMERA_TOPIC + "_view", 1, DEPTH_PUB_FREQ_HZ);
+  this->dataPtr->depthPub =
+      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
+          rsTopicRoot + DEPTH_CAMERA_TOPIC, 1, DEPTH_PUB_FREQ_HZ);
+  this->dataPtr->ired1Pub =
+      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
+          rsTopicRoot + IRED1_CAMERA_TOPIC, 1, DEPTH_PUB_FREQ_HZ);
+  this->dataPtr->ired2Pub =
+      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
+          rsTopicRoot + IRED2_CAMERA_TOPIC, 1, DEPTH_PUB_FREQ_HZ);
+  this->dataPtr->colorPub =
+      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
+          rsTopicRoot + COLOR_CAMERA_TOPIC, 1, DEPTH_PUB_FREQ_HZ);
 
   // Listen to depth camera new frame event
   this->dataPtr->newDepthFrameConn = this->dataPtr->depthCam->ConnectNewDepthFrame(
@@ -321,20 +320,11 @@ void RealSensePlugin::OnNewDepthFrame() const
                            this->dataPtr->depthCam->ImageHeight();
 
   // Allocate Memory for the real sense depth map
-  static std::vector<uint16_t> depthMap;
-  if (depthMap.size() != imageSize)
-  {
-    try
-    {
-      depthMap.resize(imageSize);
-    }
-    catch (const std::bad_alloc &e)
-    {
-      std::cerr << "Allocation failed: " << e.what() << std::endl;
-      return;
-    }
-  }
+  static std::vector<uint16_t> depthMap(imageSize);
 
+  // Clear depthMap to allow using push_back
+  depthMap.clear();
+  
   // Instantiate message
   msgs::ImageStamped msg;
 
@@ -358,13 +348,14 @@ void RealSensePlugin::OnNewDepthFrame() const
     // Check clipping and overflow
     if (depthDataFloat[i] < DEPTH_NEAR_CLIP_M ||
         depthDataFloat[i] > DEPTH_FAR_CLIP_M ||
-        depthDataFloat[i] > DEPTH_SCALE_M * UINT16_MAX || depthDataFloat[i] < 0)
+        depthDataFloat[i] > DEPTH_SCALE_M * UINT16_MAX ||
+        depthDataFloat[i] < 0)
     {
-      depthMap[i] = 0;
+      depthMap.push_back(0);
     }
     else
     {
-      depthMap[i] = (uint16_t)(depthDataFloat[i] / DEPTH_SCALE_M);
+      depthMap.push_back((uint16_t)(depthDataFloat[i] / DEPTH_SCALE_M));
     }
   }
 
