@@ -156,8 +156,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // Get Cameras Renderers
   this->dataPtr->depthCam =
       std::dynamic_pointer_cast<sensors::DepthCameraSensor>(
-          smanager->GetSensor(DEPTH_CAMERA_NAME))
-          ->DepthCamera();
+          smanager->GetSensor(DEPTH_CAMERA_NAME))->DepthCamera();
   this->dataPtr->ired1Cam = std::dynamic_pointer_cast<sensors::CameraSensor>(
                                 smanager->GetSensor(IRED1_CAMERA_NAME))
                                 ->Camera();
@@ -344,6 +343,5 @@ void RealSensePlugin::OnNewDepthFrame() const
 /////////////////////////////////////////////////
 void RealSensePlugin::OnUpdate()
 {
-  return;
 }
 
