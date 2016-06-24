@@ -50,24 +50,17 @@ namespace gazebo
     public:
     void OnUpdate();
 
-    /// \brief Callback that publishes a received Depth Frame as an ImageStamped
+    /// \brief Callback that publishes a received Depth Camera Frame as an
+    /// ImageStamped
     /// message.
     public:
     virtual void OnNewDepthFrame() const;
 
-    /// \brief Callback that publishes a received Infrared Frame as an
+    /// \brief Callback that publishes a received Camera Frame as an
     /// ImageStamped message.
     public:
-    virtual void OnNewIR1Frame() const; 
-    /// \brief Callback that publishes a received Infrared2 Frame as an
-    /// ImageStamped message.
-    public:
-    virtual void OnNewIR2Frame() const;
-
-    /// \brief Callback that publishes a received Color Frame as an ImageStamped
-    /// message.
-    public:
-    virtual void OnNewColorFrame() const;
+    virtual void OnNewFrame(const rendering::CameraPtr cam,
+                            const transport::PublisherPtr pub) const;
 
     /// \brief Private data pointer.
     private: std::unique_ptr<RealSensePluginPrivate> dataPtr;

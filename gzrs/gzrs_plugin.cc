@@ -75,6 +75,10 @@ namespace gazebo
     public:
     transport::NodePtr transportNode;
 
+    // \brief Store Real Sense depth map data.
+    public:
+    std::vector<uint16_t> depthMap;
+
     /// \brief Pointer to the Depth Publisher.
     public:
     transport::PublisherPtr depthPub;
@@ -137,8 +141,8 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 {
   // Output the name of the model
   std::cout << std::endl
-            << "The rs_camera plugin is attach to model " << _model->GetName()
-            << std::endl;
+            << "RealSensePlugin: The rs_camera plugin is attach to model "
+            << _model->GetName() << std::endl;
 
   // Store a pointer to the this model
   this->dataPtr->rsModel = _model;
@@ -167,22 +171,26 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // Check if camera renderers have been found successfuly
   if (!this->dataPtr->depthCam)
   {
-    std::cerr << "Depth Camera has not been found\n";
+    std::cerr << "RealSensePlugin: Depth Camera has not been found"
+              << std::endl;
     return;
   }
   if (!this->dataPtr->ired1Cam)
   {
-    std::cerr << "InfraRed Camera 1 has not been found\n";
+    std::cerr << "RealSensePlugin: InfraRed Camera 1 has not been found"
+              << std::endl;
     return;
   }
   if (!this->dataPtr->ired2Cam)
   {
-    std::cerr << "InfraRed Camera 2 has not been found\n";
+    std::cerr << "RealSensePlugin: InfraRed Camera 2 has not been found"
+              << std::endl;
     return;
   }
   if (!this->dataPtr->colorCam)
   {
-    std::cerr << "Color Camera has not been found\n";
+    std::cerr << "RealSensePlugin: Color Camera has not been found"
+              << std::endl;
     return;
   }
 
@@ -193,7 +201,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // Setup Publishers
   std::string rsTopicRoot =
       "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/";
-  
+
   this->dataPtr->depthViewPub =
       this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
           rsTopicRoot + DEPTH_CAMERA_TOPIC + "_view", 1, DEPTH_PUB_FREQ_HZ);
@@ -214,14 +222,20 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->dataPtr->newDepthFrameConn = this->dataPtr->depthCam->ConnectNewDepthFrame(
       std::bind(&RealSensePlugin::OnNewDepthFrame, this));
 
-  this->dataPtr->newIred1FrameConn = this->dataPtr->ired1Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewIR1Frame, this));
+  this->dataPtr->newIred1FrameConn =
+      this->dataPtr->ired1Cam->ConnectNewImageFrame(
+          std::bind(&RealSensePlugin::OnNewFrame, this, this->dataPtr->ired1Cam,
+                    this->dataPtr->ired1Pub));
 
-  this->dataPtr->newIred2FrameConn = this->dataPtr->ired2Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewIR2Frame, this));
+  this->dataPtr->newIred2FrameConn =
+      this->dataPtr->ired2Cam->ConnectNewImageFrame(
+          std::bind(&RealSensePlugin::OnNewFrame, this, this->dataPtr->ired2Cam,
+                    this->dataPtr->ired2Pub));
 
-  this->dataPtr->newColorFrameConn = this->dataPtr->ired1Cam->ConnectNewImageFrame(
-      std::bind(&RealSensePlugin::OnNewColorFrame, this));
+  this->dataPtr->newColorFrameConn =
+      this->dataPtr->colorCam->ConnectNewImageFrame(
+          std::bind(&RealSensePlugin::OnNewFrame, this, this->dataPtr->colorCam,
+                    this->dataPtr->colorPub));
 
   // Listen to the update event
   this->dataPtr->updateConnection = event::Events::ConnectWorldUpdateBegin(
@@ -229,7 +243,8 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::OnNewIR1Frame() const
+void RealSensePlugin::OnNewFrame(const rendering::CameraPtr cam,
+                                 const transport::PublisherPtr pub) const
 {
   msgs::ImageStamped msg;
 
@@ -237,79 +252,21 @@ void RealSensePlugin::OnNewIR1Frame() const
   msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
 
   // Set Image Dimensions
-  msg.mutable_image()->set_width(this->dataPtr->ired1Cam->ImageWidth());
-  msg.mutable_image()->set_height(this->dataPtr->ired1Cam->ImageHeight());
+  msg.mutable_image()->set_width(cam->ImageWidth());
+  msg.mutable_image()->set_height(cam->ImageHeight());
 
   // Set Image Pixel Format
   msg.mutable_image()->set_pixel_format(
-      common::Image::ConvertPixelFormat(this->dataPtr->ired1Cam->ImageFormat()));
+      common::Image::ConvertPixelFormat(cam->ImageFormat()));
 
   // Set Image Data
-  msg.mutable_image()->set_step(this->dataPtr->ired1Cam->ImageWidth() *
-                                this->dataPtr->ired1Cam->ImageDepth());
-  msg.mutable_image()->set_data(this->dataPtr->ired1Cam->ImageData(),
-                                this->dataPtr->ired1Cam->ImageDepth() *
-                                    this->dataPtr->ired1Cam->ImageWidth() *
-                                    this->dataPtr->ired1Cam->ImageHeight());
+  msg.mutable_image()->set_step(cam->ImageWidth() * cam->ImageDepth());
+  msg.mutable_image()->set_data(
+      cam->ImageData(),
+      cam->ImageDepth() * cam->ImageWidth() * cam->ImageHeight());
 
   // Publish realsense infrared stream
-  this->dataPtr->ired1Pub->Publish(msg);
-}
-
-/////////////////////////////////////////////////
-void RealSensePlugin::OnNewIR2Frame() const
-{
-  msgs::ImageStamped msg;
-
-  // Set Simulation Time
-  msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
-
-  // Set Image Dimensions
-  msg.mutable_image()->set_width(this->dataPtr->ired2Cam->ImageWidth());
-  msg.mutable_image()->set_height(this->dataPtr->ired2Cam->ImageHeight());
-
-  // Set Image Pixel Format
-  msg.mutable_image()->set_pixel_format(
-      common::Image::ConvertPixelFormat(this->dataPtr->ired2Cam->ImageFormat()));
-
-  // Set Image Data
-  msg.mutable_image()->set_step(this->dataPtr->ired2Cam->ImageWidth() *
-                                this->dataPtr->ired2Cam->ImageDepth());
-  msg.mutable_image()->set_data(this->dataPtr->ired2Cam->ImageData(),
-                                this->dataPtr->ired2Cam->ImageDepth() *
-                                    this->dataPtr->ired2Cam->ImageWidth() *
-                                    this->dataPtr->ired2Cam->ImageHeight());
-
-  // Publish realsense infrared2 stream
-  this->dataPtr->ired2Pub->Publish(msg);
-}
-
-/////////////////////////////////////////////////
-void RealSensePlugin::OnNewColorFrame() const
-{
-  msgs::ImageStamped msg;
-
-  // Set Simulation Time
-  msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
-
-  // Set Image Dimensions
-  msg.mutable_image()->set_width(this->dataPtr->colorCam->ImageWidth());
-  msg.mutable_image()->set_height(this->dataPtr->colorCam->ImageHeight());
-
-  // Set Image Pixel Format
-  msg.mutable_image()->set_pixel_format(
-      common::Image::ConvertPixelFormat(this->dataPtr->colorCam->ImageFormat()));
-
-  // Set Image Data
-  msg.mutable_image()->set_step(this->dataPtr->colorCam->ImageWidth() *
-                                this->dataPtr->colorCam->ImageDepth());
-  msg.mutable_image()->set_data(this->dataPtr->colorCam->ImageData(),
-                                this->dataPtr->colorCam->ImageDepth() *
-                                    this->dataPtr->colorCam->ImageWidth() *
-                                    this->dataPtr->colorCam->ImageHeight());
-
-  // Publish realsense color stream
-  this->dataPtr->colorPub->Publish(msg);
+  pub->Publish(msg);
 }
 
 /////////////////////////////////////////////////
@@ -319,12 +276,21 @@ void RealSensePlugin::OnNewDepthFrame() const
   unsigned int imageSize = this->dataPtr->depthCam->ImageWidth() *
                            this->dataPtr->depthCam->ImageHeight();
 
-  // Allocate Memory for the real sense depth map
-  static std::vector<uint16_t> depthMap(imageSize);
+  // Check if depthMap size is equivalent to imageSize
+  if (this->dataPtr->depthMap.size() != imageSize)
+  {
+    try
+    {
+      this->dataPtr->depthMap.resize(imageSize);
+    }
+    catch (std::bad_alloc &e)
+    {
+      std::cerr << "RealSensePlugin: depthMap allocation failed: " << e.what()
+                << std::endl;
+      return;
+    }
+  }
 
-  // Clear depthMap to allow using push_back
-  depthMap.clear();
-  
   // Instantiate message
   msgs::ImageStamped msg;
 
@@ -351,11 +317,12 @@ void RealSensePlugin::OnNewDepthFrame() const
         depthDataFloat[i] > DEPTH_SCALE_M * UINT16_MAX ||
         depthDataFloat[i] < 0)
     {
-      depthMap.push_back(0);
+      this->dataPtr->depthMap[i] = 0;
     }
     else
     {
-      depthMap.push_back((uint16_t)(depthDataFloat[i] / DEPTH_SCALE_M));
+      this->dataPtr->depthMap[i] =
+          (uint16_t)(depthDataFloat[i] / DEPTH_SCALE_M);
     }
   }
 
@@ -366,8 +333,9 @@ void RealSensePlugin::OnNewDepthFrame() const
   msg.mutable_image()->set_pixel_format(common::Image::L_INT16);
   msg.mutable_image()->set_step(this->dataPtr->depthCam->ImageWidth() *
                                 this->dataPtr->depthCam->ImageDepth());
-  msg.mutable_image()->set_data(depthMap.data(),
-                                sizeof(*depthMap.data()) * imageSize);
+  msg.mutable_image()->set_data(
+      this->dataPtr->depthMap.data(),
+      sizeof(*this->dataPtr->depthMap.data()) * imageSize);
 
   // Publish realsense scaled depth map
   this->dataPtr->depthPub->Publish(msg);
