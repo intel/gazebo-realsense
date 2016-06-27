@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
-  <model name="realsense">
-    <plugin name="realsense_plugin" filename="libgzrs_plugin.so"/>
+  <model name="realsense_camera">
+    <plugin name="realsense_plugin" filename="libRealSensePlugin.so"/>
     <pose frame="">0 0 0.015 0 0 0</pose>
     <link name="link">
       <inertial>
@@ -23,7 +23,7 @@
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://realsense/meshes/realsense.dae</uri>
+            <uri>model://realsense_camera/meshes/realsense.dae</uri>
           </mesh>
         </geometry>
       </visual>

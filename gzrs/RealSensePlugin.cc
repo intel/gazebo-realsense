@@ -14,7 +14,7 @@
 // limitations under the License.
 */
 
-#include "gzrs_plugin.hh"
+#include "RealSensePlugin.hh"
 #include <gazebo/physics/physics.hh>
 #include <gazebo/rendering/DepthCamera.hh>
 #include <gazebo/sensors/sensors.hh>

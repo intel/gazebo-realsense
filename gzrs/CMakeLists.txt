@@ -8,5 +8,5 @@ set(CUSTOM_COMPILE_FLAGS "-g -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS}")
 
 # Build Plugin
-add_library(gzrs_plugin SHARED gzrs_plugin.cc)
-target_link_libraries(gzrs_plugin ${GAZEBO_libraries})
+add_library(RealSensePlugin SHARED RealSensePlugin.cc)
+target_link_libraries(RealSensePlugin ${GAZEBO_libraries})
