@@ -83,10 +83,6 @@ namespace gazebo
     public:
     transport::PublisherPtr depthPub;
 
-    /// \brief Pointer to the DepthView Publisher.
-    public:
-    transport::PublisherPtr depthViewPub;
-
     /// \brief Pointer to the Color Publisher.
     public:
     transport::PublisherPtr colorPub;
@@ -137,7 +133,7 @@ RealSensePlugin::~RealSensePlugin()
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
+void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr /*_sdf*/)
 {
   // Output the name of the model
   std::cout << std::endl
@@ -201,9 +197,6 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   std::string rsTopicRoot =
       "~/" + this->dataPtr->rsModel->GetName() + "/rs/stream/";
 
-  this->dataPtr->depthViewPub =
-      this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
-          rsTopicRoot + DEPTH_CAMERA_TOPIC + "_view", 1, DEPTH_PUB_FREQ_HZ);
   this->dataPtr->depthPub =
       this->dataPtr->transportNode->Advertise<msgs::ImageStamped>(
           rsTopicRoot + DEPTH_CAMERA_TOPIC, 1, DEPTH_PUB_FREQ_HZ);
@@ -293,21 +286,8 @@ void RealSensePlugin::OnNewDepthFrame() const
   // Instantiate message
   msgs::ImageStamped msg;
 
-  // Pack viewable image message
-  msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
-  msg.mutable_image()->set_width(this->dataPtr->depthCam->ImageWidth());
-  msg.mutable_image()->set_height(this->dataPtr->depthCam->ImageHeight());
-  msg.mutable_image()->set_pixel_format(common::Image::R_FLOAT32);
-  msg.mutable_image()->set_step(this->dataPtr->depthCam->ImageWidth() *
-                                this->dataPtr->depthCam->ImageDepth());
-  const float *depthDataFloat = this->dataPtr->depthCam->DepthData();
-  msg.mutable_image()->set_data(depthDataFloat,
-                                sizeof(*depthDataFloat) * imageSize);
-
-  // Publish viewable image
-  this->dataPtr->depthViewPub->Publish(msg);
-
   // Convert Float depth data to RealSense depth data
+  const float *depthDataFloat = this->dataPtr->depthCam->DepthData();
   for (unsigned int i = 0; i < imageSize; ++i)
   {
     // Check clipping and overflow
