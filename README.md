@@ -18,14 +18,24 @@ RealSense model that is providade in ./models.
     cd gzrs/build
     cmake ..
     make
-    cd -
     ```
+
+## Install ##
+
+The plugin binaries will be installed so that Gazebo finds them. Also the
+needed models will be copied to the default gazebo models folder.
+
+    make install
+
+[comment] Default plugin path arch: /usr/local/lib64/gazebo-8/plugins/.
+[comment] Default model path arch: ~/.gazebo/models. Make install is copying
+[comment]   the models to this place changing ownership to root. We still need
+[comment]   to fix it.
+
 ## Run ##
 
-1. Set environment variables and open Gazebo. 
-
     ```
-    GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:${PWD}/gzrs/build GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:${PWD}/models gazebo --verbose
+    gazebo --verbose
     ```
 
 2. Insert the realsense model into the simulation.
