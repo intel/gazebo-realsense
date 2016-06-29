@@ -10,3 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS} ${CUSTOM_COMPILE_FLA
 # Build Plugin
 add_library(RealSensePlugin SHARED RealSensePlugin.cc)
 target_link_libraries(RealSensePlugin ${GAZEBO_libraries})
+
+install(TARGETS RealSensePlugin DESTINATION ${GAZEBO_PLUGIN_PATH})
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/../models/ DESTINATION $ENV{HOME}/.gazebo/models)
+
