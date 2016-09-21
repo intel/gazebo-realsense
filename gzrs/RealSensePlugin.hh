@@ -51,8 +51,7 @@ namespace gazebo
     void OnUpdate();
 
     /// \brief Callback that publishes a received Depth Camera Frame as an
-    /// ImageStamped
-    /// message.
+    /// ImageStamped message.
     public:
     virtual void OnNewDepthFrame() const;
 
