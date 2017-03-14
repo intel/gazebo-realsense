@@ -1,5 +1,10 @@
 # Gazebo RealSense Plugin #
 
+<a href="https://scan.coverity.com/projects/01org-gazebo-realsense">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/11940/badge.svg"/>
+</a>
+
 A RealSense Camera Gazebo plugin.
 
 This Gazebo plugin simulates a RealSense camera by publishing the 4 main
