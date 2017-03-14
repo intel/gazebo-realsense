@@ -19,8 +19,8 @@ RealSense model that is providade in ./models.
 1. Create a build folder and make using CMAKE as follows:
 
     ```
-    mkdir ./gzrs/build
-    cd gzrs/build
+    mkdir build
+    cd build
     cmake ..
     make
     ```
