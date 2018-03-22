@@ -191,7 +191,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr /*_sdf*/)
 
   // Setup Transport Node
   this->dataPtr->transportNode = transport::NodePtr(new transport::Node());
-  this->dataPtr->transportNode->Init(this->dataPtr->world->Name());
+  this->dataPtr->transportNode->Init(this->dataPtr->world->GetName());
 
   // Setup Publishers
   std::string rsTopicRoot =
@@ -241,7 +241,7 @@ void RealSensePlugin::OnNewFrame(const rendering::CameraPtr cam,
   msgs::ImageStamped msg;
 
   // Set Simulation Time
-  msgs::Set(msg.mutable_time(), this->dataPtr->world->SimTime());
+  msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
 
   // Set Image Dimensions
   msg.mutable_image()->set_width(cam->ImageWidth());
@@ -306,7 +306,7 @@ void RealSensePlugin::OnNewDepthFrame() const
   }
 
   // Pack realsense scaled depth map
-  msgs::Set(msg.mutable_time(), this->dataPtr->world->SimTime());
+  msgs::Set(msg.mutable_time(), this->dataPtr->world->GetSimTime());
   msg.mutable_image()->set_width(this->dataPtr->depthCam->ImageWidth());
   msg.mutable_image()->set_height(this->dataPtr->depthCam->ImageHeight());
   msg.mutable_image()->set_pixel_format(common::Image::L_INT16);
