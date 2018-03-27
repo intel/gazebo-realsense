@@ -12,7 +12,7 @@ RealSense streams: Depth, Infrared, Infrared2 and Color. It is associated to a
 RealSense model that is providade in ./models.
 
 ## Requirements ##
-    * Gazebo 7.0+
+    * Gazebo 8.0+
 
 ## Build ##
 
