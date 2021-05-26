@@ -23,7 +23,7 @@ endif()
 
 # Compiler flags
 set(CUSTOM_COMPILE_FLAGS "-g -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS} ${CUSTOM_COMPILE_FLAGS} -std=c++17")
 
 # Include and Link directories
 include_directories( ${GAZEBO_INCLUDE_DIRS} )
