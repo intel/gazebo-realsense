@@ -1,3 +1,4 @@
+project(gazebo-realsense)
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 # Find Gazebo and Includes
@@ -20,6 +21,8 @@ elseif(GAZEBO_MODEL_PATH)
 else()
     GET_FILENAME_COMPONENT(GZRS_MODEL_PATH ${GAZEBO_MEDIA_PATH}/../models ABSOLUTE)
 endif()
+
+set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 
 # Compiler flags
 set(CUSTOM_COMPILE_FLAGS "-g -Wall")
